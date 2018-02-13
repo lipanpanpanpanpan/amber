@@ -71,11 +71,13 @@ void writeToDatabase(std::map<std::string, int>& nodeMap, std::map<std::string, 
   cout << "size of hash map: " << mappedRdf.size() << endl;
 
   // cout << "# vertex labels: " << attributeMap.size() << endl;
+  std::set<std::vector<int>> uniqueMultidges;
   cout << multiEdges << " multi edges exist!" <<  endl;
   int selfLoops = 0;
   ofstream outF;
   outF.open(path + "edges.txt");
   for (auto it = mappedEdges.begin(); it != mappedEdges.end(); ++it) {
+    uniqueMultidges.insert(it->second);
     outF << it->first.first << " " << it->first.second << " ";
     for (size_t i = 0; i < it->second.size()-1; ++i)
       outF << it->second[i] << ",";
@@ -133,7 +135,8 @@ void writeToDatabase(std::map<std::string, int>& nodeMap, std::map<std::string, 
   outFM << "# nodes: " << authorities.size() << endl;
   outFM << "# edges: " << mappedEdges.size() << endl;
   outFM << "# multi edges: " << multiEdges <<  endl;
-  outFM << "# unique dim: " << predicates.size() << endl;
+  outFM << "# unique edges: " << predicates.size() << endl;
+  outFM << "# unique multiedges: " << uniqueMultidges.size() << endl;
   outFM << "# self loops: " << selfLoops << endl;
   // outFM << "# vertex labels: " << attributeMap.size() << endl;
   outFM << "# rdf triples: " << mappedRdf.size() << endl;
@@ -160,7 +163,17 @@ void RdfParser::createGraphDatabase(VecOfStr inArgs) // code execution: ./output
 {
   clock_t load_time = clock();
 
-  std::string inFile = inArgs[0] + inArgs[1];
+  // std::string inFile = inArgs[0] + inArgs[1];
+
+  std::vector<std::string> splittedPath;
+  FileManager manager;
+  manager.splitString(inArgs[0], '/', splittedPath);
+
+  std::string inFile = inArgs[0];
+  std::string inPath;
+  for(size_t i = 0; i < splittedPath.size()-1; ++i)
+    inPath+=splittedPath[i] + "/";
+
   ifstream file_stream (inFile);
   std::map<std::string, int> nodeMap; // S/O -> an integer for vertex id |
   std::map<std::string, int> predicateMap; // P -> an integer for edge dimension |
@@ -245,7 +258,7 @@ void RdfParser::createGraphDatabase(VecOfStr inArgs) // code execution: ./output
     return;
   }
 
-  writeToDatabase(nodeMap, predicateMap, mappedRdf, inArgs[0]);
+  writeToDatabase(nodeMap, predicateMap, mappedRdf, inPath);
   double l_time = double(clock() - load_time)/CLOCKS_PER_SEC;
   cout << "Database construction time: " << l_time << " seconds" << endl;
 }
